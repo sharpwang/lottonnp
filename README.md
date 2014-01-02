@@ -1,4 +1,4 @@
 lottonnp
 ========
 
-an android application, using nn to predict chinese union lotto
+an android application, using nn to predict chinese union lotto. by ethan 
