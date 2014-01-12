@@ -48,7 +48,11 @@ public class OpenDataHandler extends DefaultHandler {
             if (localName.equalsIgnoreCase(DRAW)){
             	currentRecord.setDraw(Long.parseLong(builder.toString()));
             } else if (localName.equalsIgnoreCase(OPENDAY)){
-            	currentRecord.setOpenDay(Long.parseLong(builder.toString()));
+            	try{
+            		currentRecord.setOpenDay(Long.parseLong(builder.toString()));
+            	} catch (NumberFormatException e){
+            		currentRecord.setOpenDay(0);
+            	}
             } else if (localName.equalsIgnoreCase(WINNERS)){
             	currentRecord.setWinners(Long.parseLong(builder.toString()));
             } else if (localName.equalsIgnoreCase(BONUS)){

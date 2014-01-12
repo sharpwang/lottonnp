@@ -1,12 +1,36 @@
 package com.example.androidtest1;
+import java.lang.reflect.InvocationTargetException;
+import java.util.List;
+
 import android.app.Activity;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.View;
+import android.view.View.OnClickListener;
+import android.widget.Button;
 import android.widget.TextView;
+
+import org.encog.ml.data.MLDataPair;
+import org.encog.ml.data.basic.BasicMLData;
+import org.encog.ml.data.basic.BasicMLDataPair;
+import org.encog.ml.data.basic.BasicMLDataSet;
+import org.encog.neural.networks.BasicNetwork;
+import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.data.NeuralDataSet;
+import org.encog.neural.data.basic.BasicNeuralData;
+import org.encog.neural.data.basic.BasicNeuralDataSet;
 
 
 public class MainActivity extends Activity {
+	private final static int SIZE_OF_HISTORY = 30; 
+	private final static int SIZE_OF_EVALUTE = 30;
+	private final static int SIZE_OF_TRAINING = 200;
+	
+	Button redBallOnePredict;
+	BasicNetwork netRedBallOne;
+	List<Record> records;
+	
 	Handler handler=new Handler() {
 		@Override
 		public void handleMessage(Message msg) {
@@ -24,6 +48,7 @@ public class MainActivity extends Activity {
 						openData.getRecords().get(0).getBlueBall()
 						); 
 				textView1.setText(lastDraw);
+				records = openData.getRecords();
 				
 				
 				String recentDraw = "";
@@ -76,6 +101,38 @@ public class MainActivity extends Activity {
 		});
 		
 		background.start();
+		
+		redBallOnePredict = (Button)findViewById(R.id.radio_button1);
+		redBallOnePredict.setOnClickListener(new OnClickListener()
+		{
+
+			@Override
+			public void onClick(View arg0) {
+				// TODO Auto-generated method stub			
+				netRedBallOne = new BasicNetwork();
+				netRedBallOne.addLayer(new BasicLayer(SIZE_OF_HISTORY));
+				netRedBallOne.addLayer(new BasicLayer(19));
+				netRedBallOne.addLayer(new BasicLayer(1));
+				netRedBallOne.getStructure().finalizeStructure();
+				netRedBallOne.reset();
+				
+				BasicMLDataSet trainingSet = new BasicMLDataSet();
+				for(int i = SIZE_OF_HISTORY + SIZE_OF_EVALUTE + SIZE_OF_TRAINING; i > SIZE_OF_HISTORY * 2 + SIZE_OF_EVALUTE; i--){
+					double[] inputArray = new double[SIZE_OF_HISTORY];
+					for(int j = 0; j < SIZE_OF_HISTORY; j++){
+						inputArray[j] = records.get(i - j).getRedBall(1) % 2;	
+					}
+					double[] idealArray = new double[1];
+					idealArray[0] = records.get(i - SIZE_OF_HISTORY).getRedBall(1) % 2;
+
+					BasicMLDataPair pair = new BasicMLDataPair(new BasicMLData(inputArray), new BasicMLData(idealArray));
+					trainingSet.add(pair);					
+				}
+
+			}
+			
+			
+		});
 		
 	}
 	public void onResume() {
