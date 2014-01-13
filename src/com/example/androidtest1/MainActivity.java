@@ -1,8 +1,12 @@
 package com.example.androidtest1;
+import java.io.File;
 import java.lang.reflect.InvocationTargetException;
+import java.util.ArrayList;
 import java.util.List;
 
 import android.app.Activity;
+import android.database.Cursor;
+import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
@@ -11,22 +15,33 @@ import android.view.View.OnClickListener;
 import android.widget.Button;
 import android.widget.TextView;
 
+import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
 import org.encog.ml.data.basic.BasicMLDataSet;
+import org.encog.ml.train.strategy.RequiredImprovementStrategy;
 import org.encog.neural.networks.BasicNetwork;
 import org.encog.neural.networks.layers.BasicLayer;
+import org.encog.neural.networks.training.Train;
+import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
+import org.encog.neural.data.NeuralData;
+import org.encog.neural.data.NeuralDataPair;
 import org.encog.neural.data.NeuralDataSet;
 import org.encog.neural.data.basic.BasicNeuralData;
+import org.encog.neural.data.basic.BasicNeuralDataPair;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
+import org.encog.persist.EncogDirectoryPersistence;
 
 
 public class MainActivity extends Activity {
 	private final static int SIZE_OF_HISTORY = 30; 
 	private final static int SIZE_OF_EVALUTE = 30;
 	private final static int SIZE_OF_TRAINING = 200;
-	
+	private final static String TABLE_DRAWS = "draws";
+	public static final String FILENAME = "netredone.eg";
+
+    DatabaseHelper dbHelper; 
 	Button redBallOnePredict;
 	BasicNetwork netRedBallOne;
 	List<Record> records;
@@ -47,9 +62,7 @@ public class MainActivity extends Activity {
 						openData.getRecords().get(0).getRedBall(6),
 						openData.getRecords().get(0).getBlueBall()
 						); 
-				textView1.setText(lastDraw);
-				records = openData.getRecords();
-				
+				textView1.setText(lastDraw);				
 				
 				String recentDraw = "";
 				for(int i=0; i<5; i++){
@@ -73,7 +86,7 @@ public class MainActivity extends Activity {
 		
 				syncLocalDb(openData);
 				
-		
+				loadDataFromLocalDb();
 				
 			}
 		}
@@ -83,6 +96,8 @@ public class MainActivity extends Activity {
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
 		setContentView(R.layout.activity_main);
+
+		dbHelper = new DatabaseHelper(this, "localdb"); 
 
 		Thread background = new Thread(new Runnable() {
 			@Override
@@ -110,28 +125,70 @@ public class MainActivity extends Activity {
 			public void onClick(View arg0) {
 				// TODO Auto-generated method stub			
 				netRedBallOne = new BasicNetwork();
-				netRedBallOne.addLayer(new BasicLayer(SIZE_OF_HISTORY));
-				netRedBallOne.addLayer(new BasicLayer(19));
-				netRedBallOne.addLayer(new BasicLayer(1));
+
+				netRedBallOne.addLayer(new BasicLayer(null, true, SIZE_OF_HISTORY));
+				netRedBallOne.addLayer(new BasicLayer(new ActivationSigmoid(), true, 19));
+				netRedBallOne.addLayer(new BasicLayer(new ActivationSigmoid(), true, 1));
 				netRedBallOne.getStructure().finalizeStructure();
 				netRedBallOne.reset();
 				
 				BasicMLDataSet trainingSet = new BasicMLDataSet();
-				for(int i = SIZE_OF_HISTORY + SIZE_OF_EVALUTE + SIZE_OF_TRAINING; i > SIZE_OF_HISTORY * 2 + SIZE_OF_EVALUTE; i--){
+				for(int i = SIZE_OF_EVALUTE ; i <  SIZE_OF_EVALUTE + SIZE_OF_TRAINING; i++){
 					double[] inputArray = new double[SIZE_OF_HISTORY];
 					for(int j = 0; j < SIZE_OF_HISTORY; j++){
-						inputArray[j] = records.get(i - j).getRedBall(1) % 2;	
+						inputArray[j] = records.get(i + j + 1 ).getRedBall(1) % 2;	
 					}
 					double[] idealArray = new double[1];
-					idealArray[0] = records.get(i - SIZE_OF_HISTORY).getRedBall(1) % 2;
-
-					BasicMLDataPair pair = new BasicMLDataPair(new BasicMLData(inputArray), new BasicMLData(idealArray));
+					idealArray[0] = records.get(i).getRedBall(1) % 2;
+					BasicMLDataPair pair = new BasicMLDataPair(new BasicMLData(inputArray), 
+							new BasicMLData(idealArray));
 					trainingSet.add(pair);					
 				}
+				
+				final Train train = new ResilientPropagation(netRedBallOne,
+						trainingSet);
+		
+				int epoch = 1;
+				do {
+				train.iteration();
+				System.out.println("Epoch #" + epoch + " Error:"
+				+ train.getError());
+				epoch++;
+				} while(train.getError() > 0.4);
+	
+				System.out.println("Saving network");
+				try{
+				String path= getApplicationContext().getFilesDir().getAbsolutePath();	
+				String file = path + "/" + FILENAME;
+				EncogDirectoryPersistence.saveObject(new File(file), netRedBallOne);
+				//BasicNetwork network = (BasicNetwork)EncogDirectoryPersistence.loadObject(new File(FILENAME));
 
-			}
-			
-			
+				}catch(Exception e){
+					System.out.println(e.getMessage());
+				}
+				
+				BasicMLDataSet evaluteSet = new BasicMLDataSet();				
+				for(int i = 0; i < SIZE_OF_EVALUTE; i++ )
+				{
+					double[] inputArray = new double[SIZE_OF_HISTORY];
+					for(int j = 0; j < SIZE_OF_HISTORY; j++){
+						inputArray[j] = records.get(i + j + 1 ).getRedBall(1) % 2;	
+					}
+					double[] idealArray = new double[1];
+					idealArray[0] = records.get(i).getRedBall(1) % 2;
+					
+					BasicMLDataPair pair = new BasicMLDataPair(new BasicNeuralData(inputArray), new BasicNeuralData(idealArray));
+					evaluteSet.add(pair);									
+				}
+				
+				System.out.println("Neural Network Results:");
+				for(MLDataPair pair: evaluteSet){
+				final BasicMLData output =
+						(BasicMLData) netRedBallOne.compute(pair.getInput());
+				System.out.println("actual=" + output.getData(0) + ",ideal=" +
+				pair.getIdeal().getData(0));
+				}
+			}			
 		});
 		
 	}
@@ -144,9 +201,9 @@ public class MainActivity extends Activity {
 	}
 	
 	public void syncLocalDb(OpenData o) {
-	    DatabaseHelper dbHelper = new DatabaseHelper(this, "localdb"); 
+		SQLiteDatabase db = dbHelper.getWritableDatabase();
 	    for(int i = 0; i < o.getRecords().size(); i++){
-	    	dbHelper.getWritableDatabase().execSQL("replace into draws(draw, redball1, redball2, redball3, " +
+	    	db.execSQL("replace into draws(draw, redball1, redball2, redball3, " +
 	    			"redball4, redball5, redball6, blueball, openday, winners, " +
 	    			"bonus, pools) values(?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
 	    			new String[]{Long.toString(o.getRecords().get(i).getDraw()),
@@ -164,5 +221,33 @@ public class MainActivity extends Activity {
 	    	);
 	    			
 	    }
+	    db.close();
+	}
+	
+	private void loadDataFromLocalDb(){
+		records = new ArrayList<Record>();
+		SQLiteDatabase db = dbHelper.getReadableDatabase();
+		Cursor cursor = db.query(TABLE_DRAWS, new String[]{"draw", "redball1", 
+					"redball2", "redball3", "redball4", "redball5", "redball6", "blueball"}, null, null,
+					null, null, "draw desc", String.valueOf(SIZE_OF_HISTORY + SIZE_OF_EVALUTE + SIZE_OF_TRAINING + 1));
+		 for (cursor.moveToFirst();!(cursor.isAfterLast());cursor.moveToNext()) {  
+			 Record record = new Record();
+			 long draw = cursor.getLong(cursor.getColumnIndex("draw"));
+			 long redBall1 = cursor.getLong(cursor.getColumnIndex("redball1"));
+			 long redBall2 = cursor.getLong(cursor.getColumnIndex("redball2"));
+			 long redBall3 = cursor.getLong(cursor.getColumnIndex("redball3"));
+			 long redBall4 = cursor.getLong(cursor.getColumnIndex("redball4"));
+			 long redBall5 = cursor.getLong(cursor.getColumnIndex("redball5"));
+			 long redBall6 = cursor.getLong(cursor.getColumnIndex("redball6"));
+			 long blueBall = cursor.getLong(cursor.getColumnIndex("blueball"));
+			 long redBalls[] = new long[]{redBall1, redBall2, redBall3, redBall4, redBall5, redBall6};
+
+			 record.setDraw(draw);
+			 record.setRedBalls(redBalls);
+			 record.setBlueBall(blueBall);
+			 records.add(record);
+	        }  
+	        cursor.close();//关闭结果集  
+	        db.close();//关闭数据库对象  
 	}
 }
