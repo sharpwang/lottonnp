@@ -1,6 +1,4 @@
-<?xml version="1.0" encoding="utf-8"?>
 <resources>
-
     <string name="app_name">双色球预测大师</string>
     <string name="action_settings">设置</string>
     <string name="hello_world">Hello world!</string>
@@ -10,5 +8,15 @@
     <string name="mynumbers">我的投注</string>
     <string name="moremore">更多</string>
     <string name="action_refresh">刷新</string>
-
+    <string-array name="drawer_items">
+        <item >红一</item>
+        <item >红二</item>
+        <item >红三</item>
+        <item >红四</item>
+        <item >红五</item>
+        <item >红六</item>
+        <item >蓝球</item>
+    </string-array>
+    <string name="drawer_open">Open navigation drawer</string>
+    <string name="drawer_close">Close navigation drawer</string>
 </resources>

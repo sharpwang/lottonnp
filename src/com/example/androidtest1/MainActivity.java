@@ -6,19 +6,30 @@ import java.util.List;
 
 import android.app.ActionBar;
 import android.app.Activity;
+import android.app.Fragment;
+import android.app.FragmentManager;
+import android.app.SearchManager;
 import android.content.Intent;
+import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.support.v4.app.ActionBarDrawerToggle;
+import android.support.v4.view.GravityCompat;
+import android.support.v4.widget.DrawerLayout;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
+import android.widget.AdapterView;
+import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ListView;
 import android.widget.TextView;
+import android.widget.Toast;
 
 import org.encog.engine.network.activation.ActivationSigmoid;
 import org.encog.ml.data.MLDataPair;
@@ -39,6 +50,12 @@ import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.persist.EncogDirectoryPersistence;
 
 
+
+
+
+
+
+
 public class MainActivity extends Activity {
 	private final static int SIZE_OF_HISTORY = 30; 
 	private final static int SIZE_OF_EVALUTE = 30;
@@ -46,6 +63,14 @@ public class MainActivity extends Activity {
 	private final static String TABLE_DRAWS = "draws";
 	public static final String FILENAME = "netredone.eg";
 
+    private String[] mPlanetTitles;
+    private DrawerLayout mDrawerLayout;
+    private ListView mDrawerList;
+    private ActionBarDrawerToggle mDrawerToggle;
+  
+    private CharSequence mTitle;
+    private CharSequence mDrawerTitle;
+    
     DatabaseHelper dbHelper; 
 	Button redBallOnePredict;
 	BasicNetwork netRedBallOne;
@@ -58,7 +83,7 @@ public class MainActivity extends Activity {
 		public void handleMessage(Message msg) {
 			if(msg.obj instanceof OpenData){
 				OpenData openData = (OpenData)msg.obj;
-				TextView textView1 = (TextView)findViewById(R.id.textView1);
+/*				TextView textView1 = (TextView)findViewById(R.id.textView1);
 				String lastDraw = String.format("第%d期开奖号码\n%d %d %d %d %d %d + %d", 
 						openData.getRecords().get(0).getDraw(),
 						openData.getRecords().get(0).getRedBall(1),
@@ -89,7 +114,7 @@ public class MainActivity extends Activity {
 				
 				TextView textView2 = (TextView)findViewById(R.id.textView2);
 				textView2.setText(recentDraw);
-				
+*/				
 		
 				syncLocalDb(openData);
 				
@@ -104,9 +129,48 @@ public class MainActivity extends Activity {
 		super.onCreate(icicle);
 		setContentView(R.layout.activity_main);
 		
-		actionBar = getActionBar();
-	    actionBar.show();
-		
+	    mTitle = mDrawerTitle = getTitle();
+		//actionBar = getActionBar();
+	   // actionBar.show();
+	
+        mPlanetTitles = getResources().getStringArray(R.array.drawer_items);
+        mDrawerLayout = (DrawerLayout) findViewById(R.id.drawer_layout);
+        mDrawerList = (ListView) findViewById(R.id.left_drawer);
+
+        // set a custom shadow that overlays the main content when the drawer opens
+        mDrawerLayout.setDrawerShadow(R.drawable.drawer_shadow, GravityCompat.START);
+     // Set the adapter for the list view
+        mDrawerList.setAdapter(new ArrayAdapter<String>(this,
+                R.layout.drawer_list_item, mPlanetTitles));
+        // Set the list's click listener
+        mDrawerList.setOnItemClickListener(new DrawerItemClickListener());
+    
+        // enable ActionBar app icon to behave as action to toggle nav drawer
+        getActionBar().setDisplayHomeAsUpEnabled(true);
+        getActionBar().setHomeButtonEnabled(true);
+
+        // ActionBarDrawerToggle ties together the the proper interactions
+        // between the sliding drawer and the action bar app icon
+        mDrawerToggle = new ActionBarDrawerToggle(
+                this,                  /* host Activity */
+                mDrawerLayout,         /* DrawerLayout object */
+                R.drawable.ic_drawer,  /* nav drawer image to replace 'Up' caret */
+                R.string.drawer_open,  /* "open drawer" description for accessibility */
+                R.string.drawer_close  /* "close drawer" description for accessibility */
+                ) {
+            public void onDrawerClosed(View view) {
+                getActionBar().setTitle(mTitle);
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+
+            public void onDrawerOpened(View drawerView) {
+                getActionBar().setTitle(mDrawerTitle);
+                invalidateOptionsMenu(); // creates call to onPrepareOptionsMenu()
+            }
+        };
+        mDrawerLayout.setDrawerListener(mDrawerToggle);
+
+        
 	    dbHelper = new DatabaseHelper(this, "localdb"); 
 
 		Thread background = new Thread(new Runnable() {
@@ -127,7 +191,7 @@ public class MainActivity extends Activity {
 		
 		background.start();
 		
-		redBallOnePredict = (Button)findViewById(R.id.radio_button1);
+/*		redBallOnePredict = (Button)findViewById(R.id.radio_button1);
 		redBallOnePredict.setOnClickListener(new OnClickListener()
 		{
 
@@ -200,7 +264,7 @@ public class MainActivity extends Activity {
 				}
 			}			
 		});
-		
+		*/
 	}
 	
 	
@@ -273,20 +337,74 @@ public class MainActivity extends Activity {
         return true;
     }
 	
-	public boolean onOptionsItemSelected(MenuItem item) {     
-		switch (item.getItemId()) {         
-		case android.R.id.home: 
-			// app icon in action bar clicked; go home   
-			Intent intent = new Intent(this, MainActivity.class);             
-			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
-			startActivity(intent);
-			return true;        
-		case R.id.action_refresh:
-			
-		default:              
-			return super.onOptionsItemSelected(item);     
-		} 
-	}
+    @Override
+    public boolean onOptionsItemSelected(MenuItem item) {
+         // The action bar home/up action should open or close the drawer.
+         // ActionBarDrawerToggle will take care of this.
+        if (mDrawerToggle.onOptionsItemSelected(item)) {
+            return true;
+        }
+        // Handle action buttons
+        switch(item.getItemId()) {
+        case R.id.action_refresh:
+            // create intent to perform web search for this planet
+            Intent intent = new Intent(Intent.ACTION_WEB_SEARCH);
+            intent.putExtra(SearchManager.QUERY, getActionBar().getTitle());
+            // catch event that there's no activity to handle intent
+            if (intent.resolveActivity(getPackageManager()) != null) {
+                startActivity(intent);
+            } else {
+                Toast.makeText(this, R.string.drawer_open, Toast.LENGTH_LONG).show();
+            }
+            return true;
+        default:
+            return super.onOptionsItemSelected(item);
+        }
+    }
+
+    /* The click listner for ListView in the navigation drawer */
+    private class DrawerItemClickListener implements ListView.OnItemClickListener {
+        @Override
+        public void onItemClick(AdapterView<?> parent, View view, int position, long id) {
+            selectItem(position);
+        }
+    }
+
+    private void selectItem(int position) {
+        // update the main content by replacing fragments
+ /*       Fragment fragment = new PlanetFragment();
+        Bundle args = new Bundle();
+        args.putInt(PlanetFragment.ARG_PLANET_NUMBER, position);
+        fragment.setArguments(args);
+
+        FragmentManager fragmentManager = getFragmentManager();
+        fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
+*/
+        // update selected item and title, then close the drawer
+        mDrawerList.setItemChecked(position, true);
+        setTitle(mPlanetTitles[position]);
+        mDrawerLayout.closeDrawer(mDrawerList);
+    }
+    
+    @Override
+    public void setTitle(CharSequence title) {
+        mTitle = title;
+        getActionBar().setTitle(mTitle);
+    }
+
+    @Override
+    protected void onPostCreate(Bundle savedInstanceState) {
+        super.onPostCreate(savedInstanceState);
+        // Sync the toggle state after onRestoreInstanceState has occurred.
+        mDrawerToggle.syncState();
+    }
+
+    @Override
+    public void onConfigurationChanged(Configuration newConfig) {
+        super.onConfigurationChanged(newConfig);
+        // Pass any configuration change to the drawer toggls
+        mDrawerToggle.onConfigurationChanged(newConfig);
+    }
 
 		
 }
