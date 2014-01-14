@@ -50,15 +50,32 @@ public class OpenDataHandler extends DefaultHandler {
             } else if (localName.equalsIgnoreCase(OPENDAY)){
             	try{
             		currentRecord.setOpenDay(Long.parseLong(builder.toString()));
-            	} catch (NumberFormatException e){
+            	} 
+            	catch (NumberFormatException e){
             		currentRecord.setOpenDay(0);
             	}
             } else if (localName.equalsIgnoreCase(WINNERS)){
-            	currentRecord.setWinners(Long.parseLong(builder.toString()));
+            	try{
+            		currentRecord.setWinners(Long.parseLong(builder.toString()));
+            	}
+            	catch (NumberFormatException e){
+            		currentRecord.setWinners(0);
+            	}
+            	
             } else if (localName.equalsIgnoreCase(BONUS)){
-            	currentRecord.setBonus(Long.parseLong(builder.toString()));
-            } else if (localName.equalsIgnoreCase(POOLS)){
-            	currentRecord.setPools(Long.parseLong(builder.toString()));
+               	try{
+               		currentRecord.setBonus(Long.parseLong(builder.toString()));
+            	}
+            	catch (NumberFormatException e){
+            		currentRecord.setBonus(0);
+            	}
+            } else if (localName.equalsIgnoreCase(POOLS)){       	
+              	try{
+              		currentRecord.setPools(Long.parseLong(builder.toString()));
+            	}
+            	catch (NumberFormatException e){
+            		currentRecord.setPools(0);
+            	}
             } else if (localName.equalsIgnoreCase(REDBALL1)){
             	currentRecord.setRedBall(1, Long.parseLong(builder.toString()));
             } else if (localName.equalsIgnoreCase(REDBALL2)){

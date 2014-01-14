@@ -4,12 +4,17 @@ import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
 
+import android.app.ActionBar;
 import android.app.Activity;
+import android.content.Intent;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
+import android.view.Menu;
+import android.view.MenuInflater;
+import android.view.MenuItem;
 import android.view.View;
 import android.view.View.OnClickListener;
 import android.widget.Button;
@@ -45,6 +50,8 @@ public class MainActivity extends Activity {
 	Button redBallOnePredict;
 	BasicNetwork netRedBallOne;
 	List<Record> records;
+	
+	ActionBar actionBar;
 	
 	Handler handler=new Handler() {
 		@Override
@@ -96,8 +103,11 @@ public class MainActivity extends Activity {
 	public void onCreate(Bundle icicle) {
 		super.onCreate(icicle);
 		setContentView(R.layout.activity_main);
-
-		dbHelper = new DatabaseHelper(this, "localdb"); 
+		
+		actionBar = getActionBar();
+	    actionBar.show();
+		
+	    dbHelper = new DatabaseHelper(this, "localdb"); 
 
 		Thread background = new Thread(new Runnable() {
 			@Override
@@ -192,6 +202,8 @@ public class MainActivity extends Activity {
 		});
 		
 	}
+	
+	
 	public void onResume() {
 		super.onResume();
 	}
@@ -250,4 +262,31 @@ public class MainActivity extends Activity {
 	        cursor.close();//关闭结果集  
 	        db.close();//关闭数据库对象  
 	}
+	
+	
+	@Override
+    public boolean onCreateOptionsMenu(Menu menu) {
+        // Inflate the menu; this adds items to the action bar if it is present.
+		super.onCreateOptionsMenu(menu);
+		MenuInflater inflater = getMenuInflater();
+		inflater.inflate(R.menu.actions, menu);
+        return true;
+    }
+	
+	public boolean onOptionsItemSelected(MenuItem item) {     
+		switch (item.getItemId()) {         
+		case android.R.id.home: 
+			// app icon in action bar clicked; go home   
+			Intent intent = new Intent(this, MainActivity.class);             
+			intent.addFlags(Intent.FLAG_ACTIVITY_CLEAR_TOP); 
+			startActivity(intent);
+			return true;        
+		case R.id.action_refresh:
+			
+		default:              
+			return super.onOptionsItemSelected(item);     
+		} 
+	}
+
+		
 }
