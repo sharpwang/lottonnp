@@ -3,6 +3,7 @@ import java.io.File;
 import java.lang.reflect.InvocationTargetException;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Locale;
 
 import android.app.ActionBar;
 import android.app.Activity;
@@ -13,20 +14,26 @@ import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
+import android.graphics.Color;
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
+import android.view.LayoutInflater;
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
+import android.view.ViewGroup;
+import android.view.ViewGroup.LayoutParams;
 import android.view.View.OnClickListener;
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
+import android.widget.ImageView;
+import android.widget.LinearLayout;
 import android.widget.ListView;
 import android.widget.TextView;
 import android.widget.Toast;
@@ -48,6 +55,15 @@ import org.encog.neural.data.basic.BasicNeuralData;
 import org.encog.neural.data.basic.BasicNeuralDataPair;
 import org.encog.neural.data.basic.BasicNeuralDataSet;
 import org.encog.persist.EncogDirectoryPersistence;
+
+import org.achartengine.ChartFactory;
+import org.achartengine.GraphicalView;
+import org.achartengine.chart.PointStyle;
+import org.achartengine.model.SeriesSelection;
+import org.achartengine.model.XYMultipleSeriesDataset;
+import org.achartengine.model.XYSeries;
+import org.achartengine.renderer.XYMultipleSeriesRenderer;
+import org.achartengine.renderer.XYSeriesRenderer;
 
 
 
@@ -372,14 +388,14 @@ public class MainActivity extends Activity {
 
     private void selectItem(int position) {
         // update the main content by replacing fragments
- /*       Fragment fragment = new PlanetFragment();
+    	Fragment fragment = new TrainFragment();
         Bundle args = new Bundle();
-        args.putInt(PlanetFragment.ARG_PLANET_NUMBER, position);
+//        args.putInt(PlanetFragment.ARG_PLANET_NUMBER, position);
         fragment.setArguments(args);
 
         FragmentManager fragmentManager = getFragmentManager();
         fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
-*/
+
         // update selected item and title, then close the drawer
         mDrawerList.setItemChecked(position, true);
         setTitle(mPlanetTitles[position]);
@@ -406,5 +422,60 @@ public class MainActivity extends Activity {
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
 
+    /**
+     * Fragment that appears in the "content_frame", shows a planet
+     */
+    public static class TrainFragment extends Fragment {
+    	/** The main dataset that includes all the series that go into a chart. */
+    	private XYMultipleSeriesDataset mDataset = new XYMultipleSeriesDataset();
+    	/** The main renderer that includes all the renderers customizing a chart. */
+    	private XYMultipleSeriesRenderer mRenderer = new XYMultipleSeriesRenderer();
+    	/** The most recently added series. */
+    	private XYSeries mCurrentSeries;
+    	/** The most recently created renderer, customizing the current series. */
+    	private XYSeriesRenderer mCurrentRenderer;
+    	/** The chart view that displays the data. */
+    	private GraphicalView mChartView;
+    	
+        public static final String ARG_PLANET_NUMBER = "planet_number";
+
+        public TrainFragment() {
+            // Empty constructor required for fragment subclasses
+        }
+
+        @Override
+        public View onCreateView(LayoutInflater inflater, ViewGroup container,
+                Bundle savedInstanceState) {
+            View rootView = inflater.inflate(R.layout.fragment_train, container, false);
+            
+            // set some properties on the main renderer
+            mRenderer.setApplyBackgroundColor(true);
+            mRenderer.setBackgroundColor(Color.argb(100, 50, 50, 50));
+            mRenderer.setAxisTitleTextSize(16);
+            mRenderer.setChartTitleTextSize(20);
+            mRenderer.setLabelsTextSize(15);
+            mRenderer.setLegendTextSize(15);
+            mRenderer.setMargins(new int[] { 20, 30, 15, 0 });
+            mRenderer.setZoomButtonsVisible(true);
+            mRenderer.setPointSize(5);
+
+            LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.chart);
+            mChartView = ChartFactory.getLineChartView(getActivity(), mDataset, mRenderer);
+            // enable the chart click events
+            mRenderer.setClickEnabled(true);
+            mRenderer.setSelectableBuffer(10);
+            layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
+                    LayoutParams.FILL_PARENT));
+            
+ /*           int i = getArguments().getInt(ARG_PLANET_NUMBER);
+            String planet = getResources().getStringArray(R.array.planets_array)[i];
+
+            int imageId = getResources().getIdentifier(planet.toLowerCase(Locale.getDefault()),
+                            "drawable", getActivity().getPackageName());
+            ((ImageView) rootView.findViewById(R.id.image)).setImageResource(imageId);
+            getActivity().setTitle(planet);
+   */         return rootView;
+        }
+    }
 		
 }

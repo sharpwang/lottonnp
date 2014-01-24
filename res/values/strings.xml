@@ -9,13 +9,8 @@
     <string name="moremore">更多</string>
     <string name="action_refresh">刷新</string>
     <string-array name="drawer_items">
-        <item >红一</item>
-        <item >红二</item>
-        <item >红三</item>
-        <item >红四</item>
-        <item >红五</item>
-        <item >红六</item>
-        <item >蓝球</item>
+        <item >训练模型</item>
+        <item >意见反馈</item>
     </string-array>
     <string name="drawer_open">Open navigation drawer</string>
     <string name="drawer_close">Close navigation drawer</string>
