@@ -73,9 +73,9 @@ import org.achartengine.renderer.XYSeriesRenderer;
 
 
 public class MainActivity extends Activity {
-	private final static int SIZE_OF_HISTORY = 30; 
-	private final static int SIZE_OF_EVALUTE = 30;
-	private final static int SIZE_OF_TRAINING = 200;
+	private final static int SIZE_OF_HISTORY = 5; 
+	private final static int SIZE_OF_EVALUTE = 5;
+	private final static int SIZE_OF_TRAINING = 50;
 	private final static String TABLE_DRAWS = "draws";
 	public static final String FILENAME = "netredone.eg";
 
@@ -91,6 +91,7 @@ public class MainActivity extends Activity {
 	Button redBallOnePredict;
 	BasicNetwork netRedBallOne;
 	List<Record> records;
+	NeuralDataSet trainingSet;
 	
 	ActionBar actionBar;
 	
@@ -132,10 +133,9 @@ public class MainActivity extends Activity {
 				textView2.setText(recentDraw);
 */				
 		
-				syncLocalDb(openData);
-				
+				syncLocalDb(openData);				
 				loadDataFromLocalDb();
-				
+				buildTrainingSet();
 			}
 		}
 	};
@@ -310,13 +310,12 @@ public class MainActivity extends Activity {
 	    			Long.toString(o.getRecords().get(i).getWinners()),
 	    			Long.toString(o.getRecords().get(i).getBonus()),
 	    			Long.toString(o.getRecords().get(i).getPools())}
-	    	);
-	    			
+	    	);	    			
 	    }
 	    db.close();
 	}
 	
-	private void loadDataFromLocalDb(){
+	public void loadDataFromLocalDb(){
 		records = new ArrayList<Record>();
 		SQLiteDatabase db = dbHelper.getReadableDatabase();
 		Cursor cursor = db.query(TABLE_DRAWS, new String[]{"draw", "redball1", 
@@ -343,6 +342,41 @@ public class MainActivity extends Activity {
 	        db.close();//关闭数据库对象  
 	}
 	
+	
+	public void buildTrainingSet(){
+		List<MLDataPair> listDataSet;
+		listDataSet = new ArrayList<MLDataPair>();
+		
+		for(int i = SIZE_OF_EVALUTE ; i <  SIZE_OF_EVALUTE + SIZE_OF_TRAINING; i++){
+			BasicMLData idealData = new BasicMLData(49);
+			for(int j = 0; j < 49; j++){
+				idealData.setData(j, 0.0);
+			}
+			
+			Record record = records.get(i);
+			for(int j = 0; j < 6; j++){
+				idealData.setData((int)record.getRedBall(j + 1) - 1, 1.0);
+			}
+			idealData.setData((int)record.getBlueBall() + 33 - 1, 1.0);
+						
+			BasicMLData inputData = new BasicMLData(SIZE_OF_HISTORY * 49);
+			for(int j = 0; j < SIZE_OF_HISTORY * 49; j++){
+				inputData.setData(j, 0.0);
+			}
+			for(int j = 1; j <= SIZE_OF_HISTORY; j++){
+				record = records.get(i + j);
+				for(int k = 0; k < 6; k++){
+					inputData.setData((j - 1) * 49 + (int)record.getRedBall(k + 1) - 1, 1.0);
+				}
+				inputData.setData((j - 1) * 49 + (int)record.getBlueBall() + 33 - 1, 1.0);
+			}
+			
+			listDataSet.add( new BasicMLDataPair(inputData, idealData));
+		}
+    	
+		trainingSet = new BasicNeuralDataSet(listDataSet);
+
+	}
 	
 	@Override
     public boolean onCreateOptionsMenu(Menu menu) {
@@ -450,13 +484,13 @@ public class MainActivity extends Activity {
             
             // set some properties on the main renderer
             mRenderer.setApplyBackgroundColor(true);
-            mRenderer.setBackgroundColor(Color.argb(100, 50, 50, 50));
+            mRenderer.setBackgroundColor(Color.argb(100, 150, 10, 10));
             mRenderer.setAxisTitleTextSize(16);
             mRenderer.setChartTitleTextSize(20);
             mRenderer.setLabelsTextSize(15);
             mRenderer.setLegendTextSize(15);
-            mRenderer.setMargins(new int[] { 20, 30, 15, 0 });
-            mRenderer.setZoomButtonsVisible(true);
+            mRenderer.setMargins(new int[] { 150, 10, 5, 20 });
+  //          mRenderer.setZoomButtonsVisible(true);
             mRenderer.setPointSize(5);
 
             LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.chart);
@@ -476,6 +510,30 @@ public class MainActivity extends Activity {
             getActivity().setTitle(planet);
    */         return rootView;
         }
+
+		/* (non-Javadoc)
+		 * @see android.app.Fragment#onActivityCreated(android.os.Bundle)
+		 */
+		@Override
+		public void onActivityCreated(Bundle savedInstanceState) {
+			// TODO Auto-generated method stub
+			super.onActivityCreated(savedInstanceState);
+			// 重新训练预测模型
+		       Button button = (Button) getActivity().findViewById(R.id.button1);  
+		        button.setOnClickListener(new OnClickListener() {  
+		            @Override  
+		            public void onClick(View v) {  
+		            	//数据存放在records中
+		            	
+		            	
+		                TextView textView = (TextView) getActivity().findViewById(R.id.textView1);  
+		                Toast.makeText(getActivity(), textView.getText(), Toast.LENGTH_LONG).show();  
+		            }  
+		        });  
+			
+		}
+        
+        
     }
 		
 }
