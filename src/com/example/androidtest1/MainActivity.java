@@ -75,7 +75,6 @@ public class MainActivity extends Activity {
 	private final static int sizeOfTraining = MyApp.getSizeOfTraining();
 	
 	private final static String TABLE_DRAWS = "draws";
-	public static final String FILENAME = "netredone.eg";
 
     private String[] mPlanetTitles;
     private DrawerLayout mDrawerLayout;

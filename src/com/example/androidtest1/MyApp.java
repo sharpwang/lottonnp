@@ -5,10 +5,17 @@ import org.encog.neural.data.NeuralDataSet;
 import android.app.Application;
 
 public class MyApp extends Application {
-	private final static int SIZE_OF_HISTORY = 5; 
-	private final static int SIZE_OF_EVALUTE = 5;
-	private final static int SIZE_OF_TRAINING = 50;
+	private static final int  SIZE_OF_HISTORY = 5; 
+	private static final int SIZE_OF_EVALUTE = 5;
+	private static final int SIZE_OF_TRAINING = 50;
+	public static final String MODEL_FILE_NAME = "trainmodel.eg";
 
+	/**
+	 * @return the filename
+	 */
+	public static String getModelFileName() {
+		return MODEL_FILE_NAME;
+	}
 	public static int getSizeOfHistory() {
 		return SIZE_OF_HISTORY;
 	}
