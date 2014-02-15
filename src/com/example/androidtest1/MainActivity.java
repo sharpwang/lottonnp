@@ -5,6 +5,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Locale;
 
+import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
 import android.app.Fragment;
@@ -68,14 +69,11 @@ import org.achartengine.renderer.XYSeriesRenderer;
 
 
 
-
-
-
-
 public class MainActivity extends Activity {
-	private final static int SIZE_OF_HISTORY = 5; 
-	private final static int SIZE_OF_EVALUTE = 5;
-	private final static int SIZE_OF_TRAINING = 50;
+	private final static int sizeOfHistory = MyApp.getSizeOfHistory();
+	private final static int sizeOfEvalute = MyApp.getSizeOfEvalute();
+	private final static int sizeOfTraining = MyApp.getSizeOfTraining();
+	
 	private final static String TABLE_DRAWS = "draws";
 	public static final String FILENAME = "netredone.eg";
 
@@ -90,8 +88,7 @@ public class MainActivity extends Activity {
     DatabaseHelper dbHelper; 
 	Button redBallOnePredict;
 	BasicNetwork netRedBallOne;
-	List<Record> records;
-	NeuralDataSet trainingSet;
+
 	
 	ActionBar actionBar;
 	
@@ -316,11 +313,11 @@ public class MainActivity extends Activity {
 	}
 	
 	public void loadDataFromLocalDb(){
-		records = new ArrayList<Record>();
+		List<Record> records = new ArrayList<Record>();
 		SQLiteDatabase db = dbHelper.getReadableDatabase();
 		Cursor cursor = db.query(TABLE_DRAWS, new String[]{"draw", "redball1", 
 					"redball2", "redball3", "redball4", "redball5", "redball6", "blueball"}, null, null,
-					null, null, "draw desc", String.valueOf(SIZE_OF_HISTORY + SIZE_OF_EVALUTE + SIZE_OF_TRAINING + 1));
+					null, null, "draw desc", String.valueOf(sizeOfHistory + sizeOfEvalute + sizeOfTraining + 1));
 		 for (cursor.moveToFirst();!(cursor.isAfterLast());cursor.moveToNext()) {  
 			 Record record = new Record();
 			 long draw = cursor.getLong(cursor.getColumnIndex("draw"));
@@ -337,17 +334,19 @@ public class MainActivity extends Activity {
 			 record.setRedBalls(redBalls);
 			 record.setBlueBall(blueBall);
 			 records.add(record);
-	        }  
+			 } 
 	        cursor.close();//关闭结果集  
-	        db.close();//关闭数据库对象  
+	        db.close();//关闭数据库对象 
+	        ((MyApp)getApplication()).setRecords(records);
 	}
 	
 	
 	public void buildTrainingSet(){
 		List<MLDataPair> listDataSet;
 		listDataSet = new ArrayList<MLDataPair>();
+		List<Record> records = ((MyApp)getApplication()).getRecords();
 		
-		for(int i = SIZE_OF_EVALUTE ; i <  SIZE_OF_EVALUTE + SIZE_OF_TRAINING; i++){
+		for(int i = sizeOfEvalute ; i <  sizeOfEvalute + sizeOfTraining; i++){
 			BasicMLData idealData = new BasicMLData(49);
 			for(int j = 0; j < 49; j++){
 				idealData.setData(j, 0.0);
@@ -359,11 +358,11 @@ public class MainActivity extends Activity {
 			}
 			idealData.setData((int)record.getBlueBall() + 33 - 1, 1.0);
 						
-			BasicMLData inputData = new BasicMLData(SIZE_OF_HISTORY * 49);
-			for(int j = 0; j < SIZE_OF_HISTORY * 49; j++){
+			BasicMLData inputData = new BasicMLData(sizeOfHistory * 49);
+			for(int j = 0; j < sizeOfHistory * 49; j++){
 				inputData.setData(j, 0.0);
 			}
-			for(int j = 1; j <= SIZE_OF_HISTORY; j++){
+			for(int j = 1; j <= sizeOfHistory; j++){
 				record = records.get(i + j);
 				for(int k = 0; k < 6; k++){
 					inputData.setData((j - 1) * 49 + (int)record.getRedBall(k + 1) - 1, 1.0);
@@ -374,7 +373,7 @@ public class MainActivity extends Activity {
 			listDataSet.add( new BasicMLDataPair(inputData, idealData));
 		}
     	
-		trainingSet = new BasicNeuralDataSet(listDataSet);
+		((MyApp)getApplication()).setTrainingSet( new BasicNeuralDataSet(listDataSet) );
 
 	}
 	
@@ -421,15 +420,9 @@ public class MainActivity extends Activity {
     }
 
     private void selectItem(int position) {
-        // update the main content by replacing fragments
-    	Fragment fragment = new TrainFragment();
-        Bundle args = new Bundle();
-//        args.putInt(PlanetFragment.ARG_PLANET_NUMBER, position);
-        fragment.setArguments(args);
-
-        FragmentManager fragmentManager = getFragmentManager();
-        fragmentManager.beginTransaction().replace(R.id.content_frame, fragment).commit();
-
+    	
+    	Intent intent = new Intent(MainActivity.this, TrainActivity.class);
+    	startActivity(intent);
         // update selected item and title, then close the drawer
         mDrawerList.setItemChecked(position, true);
         setTitle(mPlanetTitles[position]);
@@ -455,85 +448,4 @@ public class MainActivity extends Activity {
         // Pass any configuration change to the drawer toggls
         mDrawerToggle.onConfigurationChanged(newConfig);
     }
-
-    /**
-     * Fragment that appears in the "content_frame", shows a planet
-     */
-    public static class TrainFragment extends Fragment {
-    	/** The main dataset that includes all the series that go into a chart. */
-    	private XYMultipleSeriesDataset mDataset = new XYMultipleSeriesDataset();
-    	/** The main renderer that includes all the renderers customizing a chart. */
-    	private XYMultipleSeriesRenderer mRenderer = new XYMultipleSeriesRenderer();
-    	/** The most recently added series. */
-    	private XYSeries mCurrentSeries;
-    	/** The most recently created renderer, customizing the current series. */
-    	private XYSeriesRenderer mCurrentRenderer;
-    	/** The chart view that displays the data. */
-    	private GraphicalView mChartView;
-    	
-        public static final String ARG_PLANET_NUMBER = "planet_number";
-
-        public TrainFragment() {
-            // Empty constructor required for fragment subclasses
-        }
-
-        @Override
-        public View onCreateView(LayoutInflater inflater, ViewGroup container,
-                Bundle savedInstanceState) {
-            View rootView = inflater.inflate(R.layout.fragment_train, container, false);
-            
-            // set some properties on the main renderer
-            mRenderer.setApplyBackgroundColor(true);
-            mRenderer.setBackgroundColor(Color.argb(100, 150, 10, 10));
-            mRenderer.setAxisTitleTextSize(16);
-            mRenderer.setChartTitleTextSize(20);
-            mRenderer.setLabelsTextSize(15);
-            mRenderer.setLegendTextSize(15);
-            mRenderer.setMargins(new int[] { 150, 10, 5, 20 });
-  //          mRenderer.setZoomButtonsVisible(true);
-            mRenderer.setPointSize(5);
-
-            LinearLayout layout = (LinearLayout) rootView.findViewById(R.id.chart);
-            mChartView = ChartFactory.getLineChartView(getActivity(), mDataset, mRenderer);
-            // enable the chart click events
-            mRenderer.setClickEnabled(true);
-            mRenderer.setSelectableBuffer(10);
-            layout.addView(mChartView, new LayoutParams(LayoutParams.FILL_PARENT,
-                    LayoutParams.FILL_PARENT));
-            
- /*           int i = getArguments().getInt(ARG_PLANET_NUMBER);
-            String planet = getResources().getStringArray(R.array.planets_array)[i];
-
-            int imageId = getResources().getIdentifier(planet.toLowerCase(Locale.getDefault()),
-                            "drawable", getActivity().getPackageName());
-            ((ImageView) rootView.findViewById(R.id.image)).setImageResource(imageId);
-            getActivity().setTitle(planet);
-   */         return rootView;
-        }
-
-		/* (non-Javadoc)
-		 * @see android.app.Fragment#onActivityCreated(android.os.Bundle)
-		 */
-		@Override
-		public void onActivityCreated(Bundle savedInstanceState) {
-			// TODO Auto-generated method stub
-			super.onActivityCreated(savedInstanceState);
-			// 重新训练预测模型
-		       Button button = (Button) getActivity().findViewById(R.id.button1);  
-		        button.setOnClickListener(new OnClickListener() {  
-		            @Override  
-		            public void onClick(View v) {  
-		            	//数据存放在records中
-		            	
-		            	
-		                TextView textView = (TextView) getActivity().findViewById(R.id.textView1);  
-		                Toast.makeText(getActivity(), textView.getText(), Toast.LENGTH_LONG).show();  
-		            }  
-		        });  
-			
-		}
-        
-        
-    }
-		
 }

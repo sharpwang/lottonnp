@@ -9,6 +9,7 @@
         android:targetSdkVersion="18" />
 
     <application
+        android:name=".MyApp"
         android:allowBackup="true"
         android:icon="@drawable/ic_launcher"
         android:label="@string/app_name"
@@ -22,6 +23,12 @@
                 <category android:name="android.intent.category.LAUNCHER" />
             </intent-filter>
         </activity>
+        
+        <activity
+            android:name=".TrainActivity"
+            android:label="@string/trainmodel" >
+       </activity>
+        
     </application>  
  	<uses-permission android:name="android.permission.INTERNET" /> 
 </manifest>
