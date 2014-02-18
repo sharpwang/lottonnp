@@ -1,70 +1,47 @@
 package com.example.androidtest1;
-import java.io.File;
-import java.lang.reflect.InvocationTargetException;
+
 import java.util.ArrayList;
 import java.util.List;
-import java.util.Locale;
 
-import android.annotation.SuppressLint;
 import android.app.ActionBar;
 import android.app.Activity;
-import android.app.Fragment;
-import android.app.FragmentManager;
+
 import android.app.SearchManager;
 import android.content.Intent;
 import android.content.res.Configuration;
 import android.database.Cursor;
 import android.database.sqlite.SQLiteDatabase;
-import android.graphics.Color;
+
 import android.os.Bundle;
 import android.os.Handler;
 import android.os.Message;
 import android.support.v4.app.ActionBarDrawerToggle;
 import android.support.v4.view.GravityCompat;
 import android.support.v4.widget.DrawerLayout;
-import android.view.LayoutInflater;
+
 import android.view.Menu;
 import android.view.MenuInflater;
 import android.view.MenuItem;
 import android.view.View;
-import android.view.ViewGroup;
-import android.view.ViewGroup.LayoutParams;
-import android.view.View.OnClickListener;
+
 import android.widget.AdapterView;
 import android.widget.ArrayAdapter;
 import android.widget.Button;
-import android.widget.ImageView;
-import android.widget.LinearLayout;
 import android.widget.ListView;
-import android.widget.TextView;
+
+
 import android.widget.Toast;
 
-import org.encog.engine.network.activation.ActivationSigmoid;
+
 import org.encog.ml.data.MLDataPair;
 import org.encog.ml.data.basic.BasicMLData;
 import org.encog.ml.data.basic.BasicMLDataPair;
-import org.encog.ml.data.basic.BasicMLDataSet;
-import org.encog.ml.train.strategy.RequiredImprovementStrategy;
-import org.encog.neural.networks.BasicNetwork;
-import org.encog.neural.networks.layers.BasicLayer;
-import org.encog.neural.networks.training.Train;
-import org.encog.neural.networks.training.propagation.resilient.ResilientPropagation;
-import org.encog.neural.data.NeuralData;
-import org.encog.neural.data.NeuralDataPair;
-import org.encog.neural.data.NeuralDataSet;
-import org.encog.neural.data.basic.BasicNeuralData;
-import org.encog.neural.data.basic.BasicNeuralDataPair;
-import org.encog.neural.data.basic.BasicNeuralDataSet;
-import org.encog.persist.EncogDirectoryPersistence;
 
-import org.achartengine.ChartFactory;
-import org.achartengine.GraphicalView;
-import org.achartengine.chart.PointStyle;
-import org.achartengine.model.SeriesSelection;
-import org.achartengine.model.XYMultipleSeriesDataset;
-import org.achartengine.model.XYSeries;
-import org.achartengine.renderer.XYMultipleSeriesRenderer;
-import org.achartengine.renderer.XYSeriesRenderer;
+import org.encog.neural.networks.BasicNetwork;
+
+import org.encog.neural.data.basic.BasicNeuralDataSet;
+
+
 
 
 
@@ -344,6 +321,8 @@ public class MainActivity extends Activity {
 		List<MLDataPair> listDataSet;
 		listDataSet = new ArrayList<MLDataPair>();
 		List<Record> records = ((MyApp)getApplication()).getRecords();
+		List<BasicMLData> listInputSet;
+		listInputSet = new ArrayList<BasicMLData>();
 		
 		for(int i = sizeOfEvalute ; i <  sizeOfEvalute + sizeOfTraining; i++){
 			BasicMLData idealData = new BasicMLData(49);
@@ -371,9 +350,25 @@ public class MainActivity extends Activity {
 			
 			listDataSet.add( new BasicMLDataPair(inputData, idealData));
 		}
-    	
+		
 		((MyApp)getApplication()).setTrainingSet( new BasicNeuralDataSet(listDataSet) );
-
+		
+		for(int i = 0; i < sizeOfEvalute; i++){
+			Record record = records.get(i);
+			BasicMLData inputData = new BasicMLData(sizeOfHistory * 49);
+			for(int j = 0; j < sizeOfHistory * 49; j++){
+				inputData.setData(j, 0.0);
+			}
+			for(int j = 1; j <= sizeOfHistory; j++){
+				record = records.get(i + j);
+				for(int k = 0; k < 6; k++){
+					inputData.setData((j - 1) * 49 + (int)record.getRedBall(k + 1) - 1, 1.0);
+				}
+				inputData.setData((j - 1) * 49 + (int)record.getBlueBall() + 33 - 1, 1.0);
+			}			
+			listInputSet.add(inputData);
+		}
+		((MyApp)getApplication()).setEvalutingSet(listInputSet);
 	}
 	
 	@Override
