@@ -89,6 +89,31 @@ public class TrainActivity extends Activity {
 			else if(msg.obj instanceof List<?>){
 				((MyApp)getApplication()).setOutputSet((List<BasicMLData>)msg.obj);
 				((MyApp)getApplication()).makeOutputReadable();
+				List<OutputItem> items = ((MyApp)getApplication()).getOutputItems();
+				String msgText = "Output: \r\n";
+				for (int i = 0; i < items.size(); i++){
+					OutputItem item = items.get(i);
+					Record record = item.getRecord();
+					if(record != null){
+						
+						msgText = msgText + "第" + Long.toString(record.getDraw()) + "期:";
+						for(int j = 0; j < record.getRedBalls().length; j++){
+							msgText = msgText + " " + Long.toString(record.getRedBall(j + 1));
+						}
+						msgText = msgText + " + " + Long.toString(record.getBlueBall());
+					}
+					msgText = msgText + "预测 Red:";
+					for(int j = 0; j < item.getRedBalls().size(); j++){
+						msgText = msgText + " " + Integer.toString(item.getRedBalls().get(j));
+					}
+					msgText = msgText + " Blue:";
+					for(int j = 0; j < item.getBlueBalls().size(); j++){
+						msgText = msgText + " " + Integer.toString(item.getBlueBalls().get(j));
+					}
+					msgText = msgText + "\r\n";
+				}
+                TextView textView = (TextView) findViewById(R.id.textView1);  
+                textView.setText(msgText);				
 			}
 		}
    	};

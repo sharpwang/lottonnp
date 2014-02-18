@@ -34,28 +34,21 @@ public class MyApp extends Application {
 	private List<BasicMLData> evalutingSet;
 	private List<BasicMLData> outputSet;
 	private List<OutputItem> outputItems; //经过转化的可读的预测结果
+
+	public List<OutputItem> getOutputItems() {
+		return outputItems;
+	}
 	
-	/**
-	 * @return the outputSet
-	 */
+
 	public List<BasicMLData> getOutputSet() {
 		return outputSet;
 	}
-	/**
-	 * @param outputSet the outputSet to set
-	 */
 	public void setOutputSet(List<BasicMLData> outputSet) {
 		this.outputSet = outputSet;
 	}
-	/**
-	 * @return the evalutingSet
-	 */
 	public List<BasicMLData> getEvalutingSet() {
 		return evalutingSet;
 	}
-	/**
-	 * @param evalutingSet the evalutingSet to set
-	 */
 	public void setEvalutingSet(List<BasicMLData> evalutingSet) {
 		this.evalutingSet = evalutingSet;
 	}
@@ -75,8 +68,10 @@ public class MyApp extends Application {
 	public void makeOutputReadable()
 	{
 		outputItems = new ArrayList<OutputItem>();
-		for(int i = 0; i < this.getOutputSet().size() - 1; i++){
+		for(int i = 0; i < this.getOutputSet().size(); i++){
 			OutputItem item = new OutputItem(this.getOutputSet().get(i).getData());
+			if(i > 0)
+			item.setRecord(this.getRecords().get(i - 1));
 			item.makeOutputReadable();	
 			outputItems.add(item);
 		}

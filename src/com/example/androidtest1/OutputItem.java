@@ -106,22 +106,23 @@ public class OutputItem {
 			blueList2.add(blueList1.get(i));
 		}
 		//其次，按照号码排序，升序
-		Collections.sort(redList1, new Comparator<Output>(){   
+		Collections.sort(redList2, new Comparator<Output>(){   
 	           public int compare(Output arg0, Output arg1) {   
 	               return arg0.getNumber().compareTo(arg1.getNumber());
 	            }   
 	        });   
-		Collections.sort(blueList1, new Comparator<Output>(){   
+		Collections.sort(blueList2, new Comparator<Output>(){   
 	           public int compare(Output arg0, Output arg1) {   
 	        	   return arg0.getNumber().compareTo(arg1.getNumber());
 	            }   
 	        }); 
 		
 		redBalls = new ArrayList<Integer>();
-		for(int i = 0; i < redList2.size() - 1; i++){
+		blueBalls = new ArrayList<Integer>();
+		for(int i = 0; i < redList2.size(); i++){
 			redBalls.add(redList2.get(i).getNumber());
 		}
-		for(int i = 0; i < blueList2.size() - 1; i++){
+		for(int i = 0; i < blueList2.size(); i++){
 			blueBalls.add(blueList2.get(i).getNumber());
 		}	
 	}
